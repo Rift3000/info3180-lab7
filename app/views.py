@@ -29,6 +29,26 @@ def index(path):
     return render_template('index.html')
 
 
+@app.route('/api/upload', methods=['POST'])
+def upload():
+
+    photoform = UploadForm()
+
+    if request.method == 'POST' and photoform.validate_on_submit():
+        photo = photoform.photo.data  # we could also use request.files['photo']
+        description = photoform.description.data
+
+        filename = secure_filename(photo.filename)
+        photo.save(os.path.join(
+            app.config['UPLOAD_FOLDER'], filename
+        ))
+
+        return render_template('display_photo.html', filename=filename, description=description)
+
+    flash_errors(photoform)
+    return render_template('photo_upload.html', form=photoform)
+
+
 # Here we define a function to collect form errors from Flask-WTF
 # which we can later use
 def form_errors(form):
