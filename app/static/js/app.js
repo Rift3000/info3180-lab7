@@ -12,6 +12,9 @@ Vue.component('app-header', {
           <li class="nav-item active">
             <router-link class="nav-link" to="/">Home <span class="sr-only">(current)</span></router-link>
           </li>
+          <li class="nav-item">
+            <router-link class="nav-link" to="/api/upload">Upload Form </router-link>
+          </li>
         </ul>
       </div>
     </nav>
@@ -26,6 +29,88 @@ Vue.component('app-footer', {
         </div>
     </footer>
     `
+});
+
+
+
+Vue.component('alert', {
+
+    template: `
+    <p class="alert alert-success">You have successfully filled out the form!</p>
+    `,
+
+});
+
+Vue.component('error', {
+
+    template: `
+    <p class="alert alert-danger">Please enter a description and upload a photo </p>
+    `,
+
+});
+
+
+const Upload = Vue.component('upload-form', {
+    template: `
+
+    <div class="container">
+    <alert v-show="messages"></alert>
+    <error v-show="mess"> </error>
+    <h2>Upload your Photo</h2>
+    <form @submit.prevent="uploadPhoto"  id="uploadForm" method="post" enctype="multipart/form-data">
+        <div class="form-group">
+            <label> Description: </label><br/>
+            <textarea name="description" rows="5" cols="55">
+            </textarea>
+        </div>
+        <div class="form-group">
+            <label> Photo: </label>
+            <input type="file" name="photo" placeholder="choose an image" />
+        </div>
+
+        <button name="submit" v-on:click="messages = !messages, mess = !mess" class="btn btn-primary">Upload</button>
+    </form>
+    </div>
+    `,
+
+    data() {
+        return {
+            messages: false,
+            mess: true,
+        };
+    },
+
+
+
+    methods: {
+
+        uploadPhoto: function() {
+        let self = this;
+        let uploadForm = document.getElementById('uploadForm');
+        let form_data = new FormData(uploadForm);
+
+        fetch("/api/upload", {
+                method: 'POST',
+                body: form_data,
+                headers: {
+                    'X-CSRFToken': token
+                },
+                credentials: 'same-origin'
+        })
+                .then(function (response) {
+                    return response.json();
+        })
+                .then(function (jsonResponse) {
+            // display a success message
+                    console.log(jsonResponse);
+        })
+            .catch(function (error) {
+            console.log(error);
+        });
+
+        }
+    }
+
 });
 
 const Home = Vue.component('home', {
@@ -57,14 +142,20 @@ const router = new VueRouter({
     routes: [
         {path: "/", component: Home},
         // Put other routes here
-
+        { path: '/api/upload', component: Upload },
         // This is a catch all route in case none of the above matches
         {path: "*", component: NotFound}
     ]
 });
 
+
+
 // Instantiate our main Vue Instance
 let app = new Vue({
     el: "#app",
-    router
+    router,
+    data: {
+    messages: false
+  }
 });
+

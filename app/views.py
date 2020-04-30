@@ -5,8 +5,15 @@ Werkzeug Documentation:  http://werkzeug.pocoo.org/documentation/
 This file creates your application.
 """
 
+import os
 from app import app
-from flask import render_template, request
+from flask import render_template, request, redirect, url_for, flash, session, abort
+from werkzeug.utils import secure_filename
+
+# Note: that when using Flask-WTF we need to import the Form Class that we created
+# in forms.py
+from .forms import UploadForm
+
 
 ###
 # Routing for your application.
@@ -31,22 +38,28 @@ def index(path):
 
 @app.route('/api/upload', methods=['POST'])
 def upload():
-
     photoform = UploadForm()
 
-    if request.method == 'POST' and photoform.validate_on_submit():
-        photo = photoform.photo.data  # we could also use request.files['photo']
-        description = photoform.description.data
+    if request.method == 'POST':
+        if photoform.validate_on_submit():
+            photo = photoform.photo.data  # we could also use request.files['photo']
+            description = photoform.description.data
 
-        filename = secure_filename(photo.filename)
-        photo.save(os.path.join(
-            app.config['UPLOAD_FOLDER'], filename
-        ))
+            filename = secure_filename(photo.filename)
+            photo.save(os.path.join(
+                app.config['UPLOAD_FOLDER'], filename
+            ))
 
-        return render_template('display_photo.html', filename=filename, description=description)
+            data = {
+                "message": "File Upload Successful",
+                "filename": filename,
+                "description": description
+            }
 
-    flash_errors(photoform)
-    return render_template('photo_upload.html', form=photoform)
+            return data
+
+    return {"errors": [{"error 1": "You must fill out the description and select a photo"},
+                       {"error 2": "You must fill out the description and select a photo"}]}
 
 
 # Here we define a function to collect form errors from Flask-WTF
@@ -57,9 +70,9 @@ def form_errors(form):
     for field, errors in form.errors.items():
         for error in errors:
             message = u"Error in the %s field - %s" % (
-                    getattr(form, field).label.text,
-                    error
-                )
+                getattr(form, field).label.text,
+                error
+            )
             error_messages.append(message)
 
     return error_messages
